@@ -7,11 +7,8 @@ const app = express();
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
 
+const article_routes = require('./routes/article');
 
-app.get('/', (req, res) => {
-    return res.status(200).send({
-        "autor": "Agus",
-    });
-});
+app.use('/api', article_routes);
 
 module.exports = app;

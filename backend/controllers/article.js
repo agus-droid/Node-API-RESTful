@@ -102,6 +102,69 @@ const controller = {
                 article
             })
         });
+    },
+    update: (req, res) => {
+        let articleId = req.params.id;
+        let params = req.body;
+
+        try{
+            var validate_title = !validator.isEmpty(params.title);
+            var validate_content = !validator.isEmpty(params.content);
+        }catch(err){
+            return res.status(200).send({
+                status: 'error',
+                message: 'Faltan datos',
+            });
+        }
+
+        if(validate_title && validate_content){
+            Article.findOneAndUpdate({_id:articleId},params,{new:true}, (err, articleUpdated) => {
+                if(err){
+                    return res.status(500).send({
+                        status: 'error',
+                        message: 'Error al actualizar',
+                    });
+                }
+                if(!articleUpdated){
+                    return res.status(404).send({
+                        status: 'error',
+                        message: 'No existe el artículo',
+                    });
+                }
+                return res.status(200).send({
+                    status: 'success',
+                    article: articleUpdated
+                });
+            });
+        }else{
+            return res.status(200).send({
+                status: 'error',
+                message: 'Validación incorrecta',
+            });
+        }
+
+    },
+    delete: (req, res) => {
+        let articleId = req.params.id;
+
+        Article.findOneAndDelete({_id:articleId}, (err, articleRemoved) =>{
+            if(err){
+                return res.status(500).send({
+                    status: 'error',
+                    message: 'Error al intentar borrar',
+                });
+            }
+            if(!articleRemoved){
+                return res.status(404).send({
+                    status: 'error',
+                    message: 'No se ha borrado el artículo',
+                });
+            }
+            return res.status(200).send({
+                status: 'success',
+                article: articleRemoved
+            });
+        });
     }
 };
 

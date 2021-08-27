@@ -2,6 +2,8 @@
 
 const validator = require('validator');
 const Article = require('../models/article');
+const fs = require('fs');
+const path = require('path');
 
 const controller = {
     info: (req, res) => {
@@ -165,6 +167,90 @@ const controller = {
                 article: articleRemoved
             });
         });
+    },
+    upload: (req, res) => {
+        let file_name = 'Imagen no subida';
+        let file_path = req.files.file0.path;
+        
+        if(!req.files){
+            return res.status(404).send({
+                status: 'error',
+                message: file_name
+            });
+        }
+
+        //Windows
+        let file_split = file_path.split('\\');
+
+        //Linux, Mac
+        //let file_split = file_path.split('/');
+
+        file_name = file_split[2];
+        let extension_split = file_name.split('\.');
+        let file_ext = extension_split[1];
+        if(file_ext != 'png' && file_ext != 'jpg' && file_ext != 'jpeg' && file_ext != 'gif'){
+            fs.unlink(file_path, (err) => {
+                return res.status(200).send({
+                    status: 'error',
+                    message: 'Extensión del archivo inválida'
+                });
+            });
+        } else {
+            let articleId = req.params.id;
+            Article.findOneAndUpdate({_id: articleId}, {image: file_name}, {new:true}, (err, articleUpdated) => {
+                if (err || !articleUpdated){
+                    return res.status(200).send({
+                        status: 'error',
+                        message: 'Error al guardar la imagen'
+                    });    
+                }
+                return res.status(200).send({
+                    status: 'success',
+                    article: articleUpdated
+                });
+            });
+        }
+    },
+    getImage: (req, res) => {
+        let file = req.params.image;
+        let path_file = './upload/articles/' + file;
+        if (fs.existsSync(path_file)) {
+            return res.sendFile(path.resolve(path_file));
+        } else {
+            return res.status(404).send({
+                status: 'error',
+                message: 'La imagen no existe'
+            });
+        }
+    },
+    search: (req, res) => {
+        let searchString = req.params.search; 
+        Article.find({ "$or": [
+            {"title": {"$regex": searchString, "$options": "i"}},
+            {"content": {"$regex": searchString, "$options": "i"}}
+        ]})
+        .sort('_date')
+        .exec((err, articles) => {
+            if(err){
+                return res.status(500).send({
+                    status: 'error',
+                    message: 'Error en el servidor'
+                });
+            }
+
+            if(articles.length <= 0 || !articles){
+                return res.status(404).send({
+                    status: 'error',
+                    message: 'No se encontraron articulos'
+                });
+            }
+
+            return res.status(200).send({
+                status: 'success',
+                articles
+            });
+        });
+        
     }
 };
 
